@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>双人对话分离 · Speaker Split</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236EE7F9'/><rect x='7' y='11' width='4' height='10' rx='2' fill='%230a1020'/><rect x='14' y='6' width='4' height='20' rx='2' fill='%230a1020'/><rect x='21' y='13' width='4' height='9' rx='2' fill='%230a1020'/></svg>">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell" id="shell">
+
+  <header class="top">
+    <div class="mark">S</div>
+    <div class="brand">Speaker Split <small>双人对话分离 · ECAPA 声纹 + 双人聚类</small></div>
+    <div class="pill" id="statusPill"><span class="dot" id="statusDot"></span><span id="statusText">就绪</span></div>
+  </header>
+
+  <main class="grid">
+    <!-- ---------------- left column ---------------- -->
+    <section class="col">
+      <div class="card" id="inputCard">
+        <h2>输入音频 <span id="inMeta">等待选择</span></h2>
+
+        <div id="dropWrap" class="drop" style="margin-top:14px">
+          <div class="ico">🎧</div>
+          <b>拖入一段两个人的对话</b>
+          <p>WAV / MP3 / FLAC / M4A · 建议 10 秒以上<br>示例：两人交替说话的对话录音</p>
+          <div class="row" style="justify-content:center;margin-top:16px">
+            <button class="btn primary" id="pickBtn">选择文件</button>
+            <button class="btn ghost" id="sampleBtn">使用示例对话</button>
+          </div>
+          <input type="file" id="fileInput" accept="audio/*" class="hidden">
+        </div>
+
+        <div id="fileChip" class="file hidden" style="margin-top:14px">
+          <div class="fico">♪</div>
+          <div class="grow">
+            <div class="fname" id="fileName">dialog.wav</div>
+            <div class="fmeta" id="fileInfo">16 kHz · 单声道</div>
+          </div>
+          <button class="btn mini" id="origPlay" disabled>▶ 试听原音频</button>
+          <button class="btn mini ghost" id="resetBtn">重选</button>
+        </div>
+      </div>
+
+      <div class="card flat" style="flex:1 1 auto;display:flex;flex-direction:column">
+        <h2>处理管线 <span id="pipeMeta">待启动</span></h2>
+        <div class="steps" id="steps"></div>
+
+        <div class="bar"><i id="progressBar"></i></div>
+        <div class="barmeta"><span id="stageText">等待音频</span><span id="pctText">0%</span></div>
+
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+
+    <!-- ---------------- right column ---------------- -->
+    <section class="col">
+      <div class="card" id="resultCard" style="flex:0 0 auto">
+        <h2>分离结果 <span id="resMeta">尚未分离</span></h2>
+
+        <div id="emptyState" class="drop" style="margin-top:14px;cursor:default">
+          <div class="ico">⑃</div>
+          <b>两条独立音轨将出现在这里</b>
+          <p>说话人 1 与说话人 2 各自成轨，可直接试听、下载</p>
+        </div>
+
+        <div class="results hidden" id="results" style="margin-top:14px">
+          <div class="track a" id="track0">
+            <div class="thead">
+              <div class="avatar">1</div>
+              <div class="grow">
+                <div class="tname" id="name0">说话人 1</div>
+                <div class="tsub" id="sub0">—</div>
+              </div>
+              <button class="btn mini" data-play="0">▶ 试听</button>
+              <button class="btn mini ghost" data-dl="0">下载</button>
+            </div>
+            <canvas class="wave" id="wave0" height="148"></canvas>
+          </div>
+
+          <div class="track b" id="track1">
+            <div class="thead">
+              <div class="avatar">2</div>
+              <div class="grow">
+                <div class="tname" id="name1">说话人 2</div>
+                <div class="tsub" id="sub1">—</div>
+              </div>
+              <button class="btn mini" data-play="1">▶ 试听</button>
+              <button class="btn mini ghost" data-dl="1">下载</button>
+            </div>
+            <canvas class="wave" id="wave1" height="148"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="flex:1 1 auto;display:flex;flex-direction:column">
+        <h2>时间轴 <span id="tlMeta">—</span></h2>
+        <div class="tl" style="margin-top:12px">
+          <div class="tlrow">
+            <div class="tllabel">说话人 1</div>
+            <canvas class="tlcanvas" id="tl0" height="88"></canvas>
+          </div>
+          <div class="tlrow">
+            <div class="tllabel">说话人 2</div>
+            <canvas class="tlcanvas" id="tl1" height="88"></canvas>
+          </div>
+          <div class="tlrow playable" id="mixRow" title="点击试听原始混音">
+            <div class="tllabel">原始混音</div>
+            <canvas class="tlcanvas" id="tlmix" height="88"></canvas>
+          </div>
+          <div class="ticks" id="ticks"></div>
+        </div>
+
+        <div class="foot" style="margin-top:auto;border-top:0;padding-top:14px">
+          <span id="footStats">—</span>
+          <span class="grow"></span>
+          <span id="footModel">ECAPA-TDNN · 16 kHz · CPU</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

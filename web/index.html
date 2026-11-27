@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="landscape">
+<head>
+<meta charset="utf-8">
+<title>ClearerVoice — 声源分离演示</title>
+<style>
+  :root{
+    --ink:#EAF0F8;
+    --dim:rgba(234,240,248,.60);
+    --dimmer:rgba(234,240,248,.38);
+    --line:rgba(255,255,255,.10);
+    --line-2:rgba(255,255,255,.06);
+    --surface:rgba(20,26,42,.74);
+    --cyan:#35E0FF; --violet:#8B7CFF; --pink:#FF6FB5; --amber:#FFAE5C;
+    --blue:#6E9BFF; --mint:#4FE3C1;
+    --pad:76px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#04060B}
+  body{
+    font-family:"Noto Sans CJK SC","Noto Sans","DejaVu Sans",sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;transform-origin:top left}
+  html.portrait #stage{width:1080px;height:1920px}
+
+  /* ---------- background ---------- */
+  .bg{position:absolute;inset:0;overflow:hidden}
+  .bg .wash{position:absolute;inset:-20%}
+  .aurora{position:absolute;left:-10%;top:-25%;width:120%;height:150%;
+    background:
+      radial-gradient(38% 34% at 18% 16%, rgba(53,224,255,.34), transparent 62%),
+      radial-gradient(42% 38% at 82% 14%, rgba(139,124,255,.40), transparent 64%),
+      radial-gradient(46% 40% at 62% 92%, rgba(255,111,181,.26), transparent 66%),
+      radial-gradient(30% 26% at 40% 58%, rgba(53,224,255,.12), transparent 70%);
+    filter:blur(46px);opacity:1;transform-origin:50% 45%}
+  .grid{position:absolute;inset:-2px;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size:72px 72px;
+    mask-image:radial-gradient(85% 75% at 50% 42%, #000 34%, transparent 100%);
+    -webkit-mask-image:radial-gradient(85% 75% at 50% 42%, #000 34%, transparent 100%);}
+  .dots{position:absolute;inset:0;opacity:.5;
+    background-image:radial-gradient(rgba(255,255,255,.13) 1px, transparent 1.4px);
+    background-size:22px 22px;
+    mask-image:radial-gradient(80% 70% at 50% 45%, #000 10%, transparent 78%);
+    -webkit-mask-image:radial-gradient(80% 70% at 50% 45%, #000 10%, transparent 78%)}
+  .bloom{position:absolute;left:38%;top:26%;width:900px;height:760px;
+    background:radial-gradient(closest-side, rgba(120,150,255,.28), rgba(90,120,255,0) 72%);
+    filter:blur(28px)}
+  .vignette{position:absolute;inset:0;
+    background:radial-gradient(78% 68% at 50% 44%, transparent 46%, rgba(2,4,8,.52) 100%)}
+  .haze{position:absolute;left:0;right:0;top:-140px;height:420px;
+    background:radial-gradient(50% 100% at 50% 100%, rgba(139,124,255,.15), transparent 70%)}
+  .grain{position:absolute;inset:0;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='.7'/></svg>")}
+
+  /* ---------- shell ---------- */
+  #ribbon{position:absolute;left:0;right:0;bottom:0;width:100%;height:348px;z-index:1;pointer-events:none}
+  .shell{position:absolute;inset:0;z-index:2;padding:var(--pad) var(--pad) 44px;display:flex;flex-direction:column;gap:22px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;height:56px}
+  .brand{display:flex;align-items:center;gap:14px}
+  #mark{width:46px;height:46px;display:block}
+  .brandname{font-size:27px;font-weight:700;letter-spacing:.2px;line-height:1}
+  .brandname em{font-style:normal;background:linear-gradient(92deg,#7CF0FF,#B9AEFF 60%,#FFB7DE);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .brandsub{font-size:10.5px;letter-spacing:3.4px;color:var(--dimmer);margin-top:7px;text-transform:uppercase}
+  .chips{display:flex;gap:10px;align-items:center}
+  .chip{display:flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.035);
+    font-size:13.5px;color:rgba(234,240,248,.78);letter-spacing:.2px;white-space:nowrap}
+  .chip i{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  .chip.warn i{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  .chip.good i{background:var(--mint);box-shadow:0 0 10px var(--mint)}
+
+  main{position:relative;flex:1 1 auto;min-height:0}
+  .scene{position:absolute;inset:0;display:none}
+  .scene.on{display:block}
+  #s-stems.on{display:flex;flex-direction:column}
+  #s-export.on{display:flex;flex-direction:column;justify-content:center}
+  .corner{position:absolute;width:26px;height:26px;border:1px solid rgba(255,255,255,.14);z-index:3;pointer-events:none}
+  .corner.tl{left:34px;top:34px;border-right:0;border-bottom:0}
+  .corner.tr{right:34px;top:34px;border-left:0;border-bottom:0}
+  .corner.bl{left:34px;bottom:34px;border-right:0;border-top:0}
+  .corner.br{right:34px;bottom:34px;border-left:0;border-top:0}
+  .rail{position:absolute;right:44px;top:50%;transform:translateY(-50%);z-index:3;
+    display:flex;flex-direction:column;align-items:center;gap:16px}
+  .rail .rdot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.16)}
+  .rail .rdot.on{background:#7CF0FF;box-shadow:0 0 12px #7CF0FF;height:22px;border-radius:3px}
+  .rail .rline{width:1px;height:1px}
+  .hr{height:1px;margin-top:2px;
+    background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.13) 12%,rgba(139,124,255,.24) 50%,rgba(255,255,255,.13) 88%,rgba(255,255,255,0))}
+  .watermark{position:absolute;left:var(--pad);bottom:26px;font-size:12px;letter-spacing:2.4px;
+    color:rgba(234,240,248,.26);text-transform:uppercase}
+
+  /* ---------- shared ---------- */
+  .eyebrow{display:flex;align-items:center;gap:12px;font-size:12.5px;letter-spacing:3.6px;
+    color:rgba(140,230,255,.9);text-transform:uppercase}
+  .eyebrow .bar{width:34px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
+  .glass{border:1px solid var(--line);border-radius:26px;background:var(--surface);
+    box-shadow:0 30px 80px -40px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06)}
+  .grad-text{background:linear-gradient(96deg,#63E6FF 4%,#A99CFF 46%,#FF9FD0 96%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ---------- hook ---------- */
+  #s-hook .wrap{display:flex;gap:60px;align-items:center;height:100%;padding-bottom:30px}
+  #s-hook .left{flex:1 1 700px;max-width:800px}
+  #s-hook h1{font-size:84px;line-height:1.14;font-weight:800;letter-spacing:-1.6px;margin-top:26px}
+  #s-hook h1 .l{display:block}
+  #s-hook .sub{margin-top:28px;font-size:22px;line-height:1.8;color:var(--dim);max-width:660px}
+  #s-hook .flow{display:flex;align-items:center;gap:16px;margin-top:36px}
+  #s-hook .flow .step{display:flex;align-items:center;gap:10px;padding:10px 18px 10px 14px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+  #s-hook .flow .step b{font-size:11px;letter-spacing:1.4px;color:#8EE9FF;font-weight:600}
+  #s-hook .flow .step span{font-size:14px;letter-spacing:.6px;color:rgba(234,240,248,.82)}
+  #s-hook .flow .sep{width:26px;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.3))}
+  #s-hook .metrics{display:flex;gap:0;margin-top:36px}
+  #s-hook .metric{padding:0 34px;border-left:1px solid var(--line-2)}
+  #s-hook .metric:first-child{padding-left:0;border:0}
+  #s-hook .metric b{display:block;font-size:38px;font-weight:700;letter-spacing:-.5px}
+  #s-hook .metric span{display:block;font-size:12.5px;letter-spacing:1.6px;color:var(--dimmer);margin-top:8px}
+  .hero{flex:0 0 812px;height:646px;padding:26px 28px;position:relative;overflow:hidden;
+    background:linear-gradient(165deg,rgba(26,33,52,.86),rgba(13,17,28,.78));
+    box-shadow:0 44px 120px -50px rgba(89,120,255,.85), 0 0 0 1px rgba(255,255,255,.06) inset,
+      0 0 90px -30px rgba(53,224,255,.35)}
+  .hero .hrow{display:flex;align-items:center;justify-content:space-between}
+  .hero .fname{display:flex;align-items:center;gap:10px;font-size:15px;color:rgba(234,240,248,.9)}
+  .hero .fname u{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:rgba(53,224,255,.14);border:1px solid rgba(53,224,255,.3);text-decoration:none;
+    font-size:9.5px;letter-spacing:.4px;color:#9BE9FF}
+  .hero .dur{font-size:12.5px;color:var(--dimmer);letter-spacing:1.2px}
+  #heroSpec{display:block;width:100%;height:238px;margin-top:18px;border-radius:14px}
+  #heroWave{display:block;width:100%;height:196px;margin-top:10px}
+  .hero .hfoot{display:flex;gap:18px;margin-top:12px;align-items:center;flex-wrap:wrap}
+  .hero .tag{display:flex;align-items:center;gap:7px;font-size:12.5px;color:rgba(234,240,248,.66)}
+  .hero .tag i{width:8px;height:8px;border-radius:2px}
+  .hero .hlabel{position:absolute;right:26px;bottom:20px;font-size:11px;letter-spacing:2.4px;color:var(--dimmer)}
+
+  /* ---------- upload ---------- */
+  #s-upload .center{height:100%;display:flex;align-items:center;justify-content:center;padding-bottom:34px}
+  .upcard{width:1180px;padding:38px 42px 34px}
+  .uphead{display:flex;align-items:center;justify-content:space-between}
+  .uphead h2{font-size:30px;font-weight:700;letter-spacing:-.4px}
+  .drop{margin-top:24px;height:196px;border-radius:20px;border:1.6px dashed rgba(255,255,255,.16);
+    display:flex;align-items:center;justify-content:center;gap:26px;position:relative;overflow:hidden;
+    background:rgba(255,255,255,.018)}
+  .drop .ic{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;
+    background:rgba(53,224,255,.1);border:1px solid rgba(53,224,255,.26)}
+  .drop .txt b{display:block;font-size:20px;font-weight:600}
+  .drop .txt span{display:block;font-size:13.5px;color:var(--dimmer);margin-top:8px;letter-spacing:.4px}
+  .filecard{position:absolute;inset:0;padding:0 30px;display:none;align-items:center;gap:20px}
+  .filecard .fico{width:52px;height:52px;border-radius:14px;background:linear-gradient(150deg,rgba(139,124,255,.28),rgba(53,224,255,.16));
+    border:1px solid rgba(255,255,255,.16);display:grid;place-items:center;font-size:11px;letter-spacing:.6px;color:#CFD8FF}
+  .filecard .fmeta b{font-size:20px;font-weight:600}
+  .filecard .fmeta span{display:block;font-size:13px;color:var(--dimmer);margin-top:6px;letter-spacing:.6px}
+  #fileWave{width:520px;height:56px;margin-left:auto}
+  .cta-row{display:flex;align-items:center;gap:22px;margin-top:26px}
+  .btn{height:60px;padding:0 34px;border-radius:16px;display:flex;align-items:center;gap:12px;
+    font-size:18px;font-weight:600;letter-spacing:.4px;color:#04121A;
+    background:linear-gradient(96deg,#6DEBFF,#9DB4FF 55%,#FFB2DA);
+    box-shadow:0 18px 44px -20px rgba(109,235,255,.85);position:relative}
+  .btn .dot{width:9px;height:9px;border-radius:50%;background:rgba(4,18,26,.55)}
+  .btn.ghost{color:var(--ink);background:transparent;border:1px solid var(--line);box-shadow:none;font-weight:500}
+  .hint{font-size:13.5px;color:var(--dimmer);letter-spacing:.4px}
+  .prog{margin-top:30px;height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+  .prog i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#35E0FF,#8B7CFF 60%,#FF6FB5);box-shadow:0 0 22px rgba(139,124,255,.7)}
+  .prow{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+  .prow .pt{font-size:13.5px;color:var(--dim);letter-spacing:.6px}
+  .prow .pv{font-size:22px;font-weight:700}
+  .logs{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px 30px}
+  .logline{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--dim);
+    font-family:"Noto Sans Mono CJK SC",monospace;letter-spacing:.2px}
+  .logline .box{width:17px;height:17px;border-radius:5px;border:1px solid rgba(255,255,255,.22);
+    display:grid;place-items:center;font-size:11px;color:#7CE7C0}
+  .done{margin-top:24px;display:flex;align-items:center;gap:12px;font-size:16px;color:#9BF2D2}
+
+  /* ---------- stems ---------- */
+  .shead{display:flex;align-items:flex-end;justify-content:space-between}
+  .shead h2{font-size:40px;font-weight:800;letter-spacing:-.8px}
+  .shead p{margin-top:10px;font-size:15px;color:var(--dim);letter-spacing:.3px}
+  .sbody{display:flex;gap:26px;margin-top:26px;flex:1 1 auto;min-height:0}
+  .lanes{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+  .lane{flex:1 1 0}
+  .lane{position:relative;border-radius:18px;border:1px solid var(--line);
+    background:rgba(255,255,255,.032);padding:12px 18px;display:grid;
+    grid-template-columns:224px 1fr 190px;gap:16px;align-items:center;overflow:hidden}
+  .lane .glowline{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+  .lhead{display:flex;align-items:center;gap:12px;min-width:0}
+  .lhead .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .lnames b{display:block;font-size:19px;font-weight:600;letter-spacing:.2px}
+  .lnames span{display:block;font-size:10.5px;letter-spacing:2.6px;color:var(--dimmer);margin-top:4px}
+  .lwave{width:100%;height:100%;max-height:150px;display:block}
+  .lctl{display:flex;flex-direction:column;gap:9px;align-items:flex-end}
+  .pills{display:flex;gap:7px}
+  .pill{height:24px;padding:0 10px;border-radius:7px;border:1px solid var(--line);
+    font-size:10.5px;letter-spacing:1.2px;display:grid;place-items:center;color:rgba(234,240,248,.5)}
+  .meter{display:flex;gap:3px;align-items:flex-end;height:22px}
+  .meter i{width:5px;height:100%;border-radius:2px;background:rgba(255,255,255,.1);position:relative;overflow:hidden}
+  .meter i u{position:absolute;left:0;right:0;bottom:0;border-radius:2px}
+  .focus{flex:0 0 396px;display:flex;flex-direction:column;gap:16px}
+  .fcard{padding:26px 26px 22px;border-radius:24px;border:1px solid var(--line);
+    background:linear-gradient(170deg,rgba(255,255,255,.06),rgba(255,255,255,.022));
+    box-shadow:0 26px 70px -46px #000;position:relative;overflow:hidden}
+  .fcard .fnum{font-size:11px;letter-spacing:3px;color:var(--dimmer)}
+  .fcard .fen{font-size:54px;font-weight:800;letter-spacing:-1px;line-height:1;margin-top:14px}
+  .fcard .fcn{font-size:24px;font-weight:600;margin-top:10px;letter-spacing:.6px}
+  .fcard .fdesc{font-size:13.5px;line-height:1.75;color:var(--dim);margin-top:14px;min-height:70px}
+  .fcard .fspec{width:100%;height:120px;display:block;margin-top:6px;border-radius:12px}
+  .fstats{display:flex;gap:10px;margin-top:16px}
+  .fstat{flex:1;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);
+    border:1px solid var(--line-2)}
+  .fstat b{display:block;font-size:17px;font-weight:700}
+  .fstat span{display:block;font-size:10.5px;letter-spacing:1.4px;color:var(--dimmer);margin-top:5px}
+  .badge{display:flex;align-items:center;gap:9px;font-size:13px;color:#9BF2D2}
+  .badge .tick{width:18px;height:18px;border-radius:50%;background:rgba(79,227,193,.16);
+    border:1px solid rgba(79,227,193,.5);display:grid;place-items:center;font-size:10px}
+  .caption{font-size:14.5px;line-height:1.8;color:var(--dim)}
+
+  /* toggle (karaoke) */
+  .toggle{display:flex;gap:6px;padding:5px;border-radius:13px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);width:max-content}
+  .toggle span{height:34px;padding:0 18px;border-radius:9px;display:grid;place-items:center;
+    font-size:13.5px;color:rgba(234,240,248,.55);letter-spacing:.6px}
+  .toggle span.on{background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+
+  /* ---------- export ---------- */
+  #s-export .ehead{text-align:center;margin-top:8px}
+  #s-export h2{font-size:52px;font-weight:800;letter-spacing:-1.2px}
+  #s-export .ecards{display:flex;gap:24px;justify-content:center;margin-top:54px}
+  .ecard{width:376px;padding:30px 30px 26px;border-radius:24px;border:1px solid var(--line);
+    background:linear-gradient(175deg,rgba(255,255,255,.065),rgba(255,255,255,.02));
+    box-shadow:0 30px 70px -50px #000;position:relative;overflow:hidden}
+  .ecard .eicon{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;
+    font-size:11px;letter-spacing:.8px;border:1px solid rgba(255,255,255,.16);color:#DDE6FF;
+    background:linear-gradient(150deg,rgba(139,124,255,.3),rgba(53,224,255,.14))}
+  .ecard h3{font-size:25px;font-weight:700;margin-top:22px;letter-spacing:-.3px}
+  .ecard .sub{font-size:13px;color:var(--dimmer);margin-top:8px;letter-spacing:.5px}
+  .ecard ul{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:9px}
+  .ecard li{font-size:13.5px;color:var(--dim);display:flex;align-items:center;gap:9px}
+  .ecard li i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.3)}
+  .ecard .ready{position:absolute;right:22px;top:26px}
+  .estats{display:flex;justify-content:center;gap:0;margin-top:60px}
+  .estat{padding:0 46px;border-left:1px solid var(--line-2);text-align:center}
+  .estat:first-child{border:0}
+  .estat b{font-size:38px;font-weight:800;letter-spacing:-.8px}
+  .estat span{display:block;font-size:12.5px;letter-spacing:1.8px;color:var(--dimmer);margin-top:10px}
+
+  /* ---------- outro ---------- */
+  #s-outro .wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:0;padding-bottom:40px}
+  #outroMark{width:132px;height:132px}
+  .oname{font-size:78px;font-weight:800;letter-spacing:-2px;margin-top:26px}
+  .otag{font-size:27px;color:rgba(234,240,248,.78);margin-top:20px;letter-spacing:2px}
+  .octa{margin-top:46px;display:flex;align-items:center;gap:14px;height:62px;padding:0 34px;
+    border-radius:999px;border:1px solid rgba(255,255,255,.18);
+    background:linear-gradient(96deg,rgba(53,224,255,.16),rgba(139,124,255,.18),rgba(255,111,181,.14));
+    font-size:20px;letter-spacing:1.4px}
+  .octa b{font-weight:700}
+  .ofoot{margin-top:26px;font-size:13.5px;letter-spacing:2.6px;color:var(--dimmer)}
+
+  /* cursor */
+  #cursor{position:absolute;left:0;top:0;width:34px;height:34px;z-index:40;pointer-events:none;display:none}
+  #cursor svg{width:100%;height:100%;filter:drop-shadow(0 6px 12px rgba(0,0,0,.6))}
+  #ripple{position:absolute;width:90px;height:90px;border-radius:50%;border:2px solid rgba(159,235,255,.9);
+    transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:39}
+
+  /* ---------- portrait ---------- */
+  html.portrait{--pad:54px}
+  html.portrait #s-hook .wrap{flex-direction:column;align-items:stretch;justify-content:center;gap:44px}
+  html.portrait #s-hook .left{max-width:none}
+  html.portrait #s-hook h1{font-size:84px;line-height:1.16;margin-top:22px}
+  html.portrait #s-hook .sub{font-size:25px;line-height:1.75;margin-top:24px;max-width:none}
+  html.portrait #s-hook .metrics{margin-top:36px}
+  html.portrait #s-hook .metric{padding:0 24px}
+  html.portrait #s-hook .metric b{font-size:38px}
+  html.portrait .hero{flex:0 0 auto;width:100%;height:470px}
+  html.portrait #heroSpec{height:200px}
+  html.portrait #heroWave{height:150px}
+  html.portrait .upcard{width:100%;padding:34px 30px;margin:0 6px}
+  html.portrait .drop{height:250px;flex-direction:column;gap:16px;text-align:center}
+  html.portrait #fileWave{width:100%;height:44px;margin:0}
+  html.portrait .filecard{flex-direction:column;align-items:flex-start;justify-content:center;gap:12px}
+  html.portrait .logs{grid-template-columns:1fr}
+  html.portrait .shead h2{font-size:44px}
+  html.portrait .sbody{flex-direction:column;gap:18px;height:auto}
+  html.portrait .focus{flex:0 0 auto;order:-1}
+  html.portrait .fcard{padding:22px 22px 18px}
+  html.portrait .fcard .fen{font-size:44px}
+  html.portrait .fcard .fdesc{min-height:0;font-size:15px}
+  html.portrait .fspec{height:96px}
+  html.portrait .lane{grid-template-columns:1fr;gap:6px;padding:12px 16px}
+  html.portrait .lctl{flex-direction:row;justify-content:space-between;align-items:center;width:100%}
+  html.portrait .lwave{height:62px}
+  html.portrait #s-export .ecards{flex-direction:column;align-items:center;gap:16px;margin-top:36px}
+  html.portrait .ecard{width:100%;display:grid;grid-template-columns:70px 1fr;gap:0 18px;padding:22px 24px}
+  html.portrait .ecard .eicon{grid-row:1/3}
+  html.portrait .ecard h3{margin-top:0}
+  html.portrait .ecard ul{grid-column:2;margin-top:12px}
+  html.portrait .estats{flex-wrap:wrap;gap:26px 0;margin-top:36px}
+  html.portrait .estat{padding:0 30px}
+  html.portrait .oname{font-size:92px}
+  html.portrait .otag{font-size:30px;text-align:center}
+  html.portrait #s-export h2{font-size:58px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg">
+    <div class="aurora" id="aurora"></div>
+    <div class="grid"></div>
+    <div class="dots"></div>
+    <div class="bloom"></div>
+    <div class="haze"></div>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+  </div>
+
+  <canvas id="ribbon"></canvas>
+
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <canvas id="mark" width="92" height="92"></canvas>
+        <div>
+          <div class="brandname">Clearer<em>Voice</em></div>
+          <div class="brandsub">AI Stem Separation</div>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip"><i></i><span id="chip1">48 kHz · 无损分轨</span></div>
+        <div class="chip"><i></i><span id="chip2">htdemucs · 混合域</span></div>
+        <div class="chip good"><i></i><span id="chip3">本地处理 · 零上传</span></div>
+      </div>
+    </div>
+    <div class="hr"></div>
+
+    <main>
+      <!-- ============ HOOK ============ -->
+      <section class="scene" id="s-hook">
+        <div class="wrap">
+          <div class="left">
+            <div class="eyebrow" data-io><span class="bar"></span>AI 声源分离 · STEM SEPARATION</div>
+            <h1>
+              <span class="l" data-io>一段混音，</span>
+              <span class="l grad-text" data-io>拆成四条声音</span>
+            </h1>
+            <p class="sub" data-io>上传任意歌曲，ClearerVoice 秒级拆出 <b style="color:#FF9ACB">人声</b>、<b style="color:#FFC283">鼓</b>、<b style="color:#9AB4FF">贝斯</b> 与 <b style="color:#7BEFD6">其他乐器</b>，每条都能单独试听、导出、二次创作。</p>
+            <div class="flow" data-io>
+              <div class="step"><b>01</b><span>上传音频</span></div>
+              <div class="sep"><i></i></div>
+              <div class="step"><b>02</b><span>四轨分离</span></div>
+              <div class="sep"><i></i></div>
+              <div class="step"><b>03</b><span>逐轨导出</span></div>
+            </div>
+            <div class="metrics" data-io>
+              <div class="metric"><b>4</b><span>输出分轨</span></div>
+              <div class="metric"><b>48<small style="font-size:16px;font-weight:600"> kHz</small></b><span>采样率 · 24 bit</span></div>
+              <div class="metric"><b>3.7<small style="font-size:16px;font-weight:600">×</small></b><span>实时分离速度</span></div>
+            </div>
+          </div>
+          <div class="hero glass" id="heroCard">
+            <div class="hrow">
+              <div class="fname"><u>WAV</u>demo_track.wav</div>
+              <div class="dur">00:40 · 48 kHz · STEREO</div>
+            </div>
+            <canvas id="heroSpec"></canvas>
+            <canvas id="heroWave"></canvas>
+            <div class="hfoot" id="heroFoot"></div>
+            <div class="hlabel" id="heroLabel">MIXTURE</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ UPLOAD ============ -->
+      <section class="scene" id="s-upload">
+        <div class="center">
+          <div class="upcard glass">
+            <div class="uphead">
+              <h2>上传 · 分离</h2>
+              <div class="hint">支持 WAV / MP3 / FLAC / M4A · 单文件 ≤ 200 MB</div>
+            </div>
+            <div class="drop" id="drop">
+              <div class="ic">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7CE7FF" stroke-width="1.7" stroke-linecap="round">
+                  <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>
+                </svg>
+              </div>
+              <div class="txt"><b>拖入音频，或点击选择文件</b><span>本地解析 · 原始采样率保留</span></div>
+              <div class="filecard" id="filecard">
+                <div class="fico">WAV</div>
+                <div class="fmeta"><b>demo_track.wav</b><span>00:40 · 48 kHz · 立体声 · 6.4 MB</span></div>
+                <canvas id="fileWave"></canvas>
+              </div>
+            </div>
+            <div class="cta-row">
+              <div class="btn" id="sepBtn"><span class="dot"></span>开始分离</div>
+              <div class="btn ghost" id="optBtn">4 轨 · 人声/鼓/贝斯/其他</div>
+              <div class="hint" id="etaHint">预计 12 秒</div>
+            </div>
+            <div class="prog"><i id="progFill"></i></div>
+            <div class="prow">
+              <div class="pt" id="progText">等待开始</div>
+              <div class="pv" id="progPct">0%</div>
+            </div>
+            <div class="logs" id="logs"></div>
+            <div class="done" id="doneBadge" style="opacity:0">
+              <span class="tick">✓</span>分离完成 · 4 条无损分轨 · <b style="margin:0 4px">11.6 s</b> · 已就绪
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ STEMS ============ -->
+      <section class="scene" id="s-stems">
+        <div class="shead">
+          <div>
+            <h2 id="sTitle">四条无损分轨</h2>
+            <p id="sSub">同一段音频，四种声音被完整拆开 —— 单独试听、单独导出。</p>
+          </div>
+          <div class="chip good" id="stemChip"><i></i><span id="stemChipText">htdemucs · 4 stems · 48 kHz</span></div>
+        </div>
+        <div class="sbody">
+          <div class="lanes" id="lanes"></div>
+          <div class="focus">
+            <div class="fcard" id="fcard">
+              <div class="fnum" id="fnum">STEM 01 / 04</div>
+              <div class="fen" id="fen">VOCALS</div>
+              <div class="fcn" id="fcn">人声</div>
+              <div class="fdesc" id="fdesc"></div>
+              <canvas class="fspec" id="fspec"></canvas>
+              <div class="fstats">
+                <div class="fstat"><b id="fst1">-3.2 dB</b><span>峰值电平</span></div>
+                <div class="fstat"><b id="fst2">92%</b><span>分离置信度</span></div>
+              </div>
+            </div>
+            <div class="caption" id="fcaption"></div>
+            <div class="toggle" id="modeToggle" style="display:none">
+              <span id="tgKeep">保留人声</span><span id="tgDrop">去掉人声</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ EXPORT ============ -->
+      <section class="scene" id="s-export">
+        <div class="ehead">
+          <div class="eyebrow" style="justify-content:center"><span class="bar"></span>EXPORT</div>
+          <h2 style="margin-top:18px">导出即用，不降质</h2>
+        </div>
+        <div class="ecards" id="ecards"></div>
+        <div class="estats">
+          <div class="estat"><b>40<small style="font-size:18px"> s</small></b><span>音频时长</span></div>
+          <div class="estat"><b>11.6<small style="font-size:18px"> s</small></b><span>分离耗时</span></div>
+          <div class="estat"><b>4</b><span>分轨文件</span></div>
+          <div class="estat"><b>0</b><span>上传到云端</span></div>
+        </div>
+      </section>
+
+      <!-- ============ OUTRO ============ -->
+      <section class="scene" id="s-outro">
+        <div class="wrap">
+          <canvas id="outroMark" width="264" height="264"></canvas>
+          <div class="oname">Clearer<em style="font-style:normal" class="grad-text">Voice</em></div>
+          <div class="otag">让每一条声音，都被听见。</div>
+          <div class="octa"><b>clearervoice.ai</b><span style="opacity:.5">·</span>免费试用</div>
+          <div class="ofoot">人声 · 鼓 · 贝斯 · 其他乐器 &nbsp;|&nbsp; 本地运行 · 不上传云端</div>
+        </div>
+      </section>
+    </main>
+
+    <div class="rail" id="rail">
+      <div class="rdot" data-i="0"></div><div class="rdot" data-i="1"></div>
+      <div class="rdot" data-i="2"></div><div class="rdot" data-i="3"></div>
+      <div class="rdot" data-i="4"></div>
+    </div>
+    <div class="watermark" id="watermark">ClearerVoice · STEM SEPARATION DEMO</div>
+  </div>
+
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div id="cursor">
+    <svg viewBox="0 0 24 24"><path d="M4 2l14 8.5-6.2 1.4L9 20z" fill="#fff" stroke="#0a1220" stroke-width="1.2"/></svg>
+  </div>
+  <div id="ripple"></div>
+</div>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# ---- runtime / heavy artifacts (regenerable, never commit) ----
+.venv/
+node_modules/
+build/
+data/
+audio/
+pretrained_models/
+__pycache__/
+*.pyc
+.luban/
+
+# logs & scratch
+*.log
+web/_p*.html
+
+# keep the small deliverables
+!out/*.mp4

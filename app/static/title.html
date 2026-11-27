@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Speaker Split</title>
+<style>
+  :root{--a:#6EE7F9;--b:#A78BFA;--ink:#EAF0F8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:
+      radial-gradient(1200px 760px at 14% -10%, rgba(110,231,249,.13), transparent 62%),
+      radial-gradient(1000px 700px at 92% 8%, rgba(167,139,250,.16), transparent 64%),
+      #080B12;
+    color:var(--ink);
+    font-family:"Noto Sans CJK SC","WenQuanYi Zen Hei",sans-serif;
+    display:grid;place-items:center;
+  }
+  .wrap{text-align:center;padding:0 80px;animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(26px)}}
+  .tag{display:inline-flex;align-items:center;gap:10px;padding:9px 18px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);
+    font-size:15px;letter-spacing:2.4px;color:rgba(234,240,248,.66);text-transform:uppercase}
+  .tag i{width:8px;height:8px;border-radius:50%;background:linear-gradient(120deg,var(--a),var(--b));
+    box-shadow:0 0 14px var(--a);display:block}
+  h1{font-size:88px;line-height:1.14;font-weight:700;letter-spacing:-1px;margin:36px 0 0}
+  h1 em{font-style:normal;background:linear-gradient(100deg,var(--a),var(--b));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{margin-top:26px;font-size:26px;color:rgba(234,240,248,.62);letter-spacing:.4px}
+  .bars{display:flex;justify-content:center;align-items:center;gap:5px;height:120px;margin:52px 0 6px}
+  .bars span{display:block;width:6px;border-radius:99px;background:linear-gradient(180deg,var(--a),var(--b));
+    opacity:.85;animation:pulse 1.9s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  .pills{display:flex;gap:14px;justify-content:center;margin-top:34px}
+  .pill{padding:12px 22px;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+    background:rgba(20,26,42,.72);font-size:17px;color:rgba(234,240,248,.8)}
+  .pill b{color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="tag"><i></i>demo · 声源分离</div>
+    <h1>两个人说话<br><em>分成两条音轨</em></h1>
+    <div class="sub">上传一段双人对话 · 认出两位说话人 · 各自导出独立 WAV</div>
+    <div class="bars" id="bars"></div>
+    <div class="pills">
+      <div class="pill">输入 <b>30.9 s</b> 双人对话</div>
+      <div class="pill">ECAPA 声纹 + <b>双人聚类</b></div>
+      <div class="pill"><b>5.6×</b> 实时 · CPU</div>
+    </div>
+  </div>
+<script>
+  const bars = document.getElementById('bars');
+  for (let i = 0; i < 96; i++) {
+    const s = document.createElement('span');
+    const h = 16 + 96 * Math.pow(Math.abs(Math.sin(i * 0.37) * Math.cos(i * 0.11)), 1.4);
+    s.style.height = h + 'px';
+    s.style.animationDelay = (-i * 0.045) + 's';
+    s.style.animationDuration = (1.4 + (i % 5) * 0.18) + 's';
+    bars.appendChild(s);
+  }
+</script>
+</body>
+</html>

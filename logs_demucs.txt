@@ -1,0 +1,4 @@
+Selected model is a bag of 1 models. You will see that many progress bars per track.
+Separated tracks will be stored in /home/skyer/WorkStation/audiospliter/audio/separated/htdemucs
+Separating track audio/mix.wav
+  0%|                                                                                   | 0.0/46.8 [00:00<?, ?seconds/s] 12%|█████████▎                                                                | 5.85/46.8 [00:03<00:26,  1.55seconds/s] 62%|█████████████████████████████████████████████▋                           | 29.25/46.8 [00:06<00:03,  4.73seconds/s]100%|██████████████████████████████████████████████████████████████████████████| 46.8/46.8 [00:07<00:00,  8.78seconds/s]100%|██████████████████████████████████████████████████████████████████████████| 46.8/46.8 [00:07<00:00,  6.63seconds/s]

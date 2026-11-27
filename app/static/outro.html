@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Speaker Split · 结果</title>
+<style>
+  :root{--a:#6EE7F9;--b:#A78BFA;--ink:#EAF0F8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:
+      radial-gradient(1100px 700px at 88% -8%, rgba(167,139,250,.16), transparent 62%),
+      radial-gradient(1000px 700px at 8% 104%, rgba(110,231,249,.12), transparent 62%),
+      #080B12;
+    color:var(--ink);font-family:"Noto Sans CJK SC","WenQuanYi Zen Hei",sans-serif;
+    display:flex;flex-direction:column;justify-content:center;padding:0 130px;
+  }
+  .kicker{font-size:15px;letter-spacing:3px;text-transform:uppercase;color:rgba(234,240,248,.5)}
+  h2{font-size:62px;font-weight:700;margin:20px 0 10px;letter-spacing:-.5px}
+  h2 em{font-style:normal;background:linear-gradient(100deg,var(--a),var(--b));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .line{height:2px;width:120px;border-radius:2px;margin:26px 0 44px;
+    background:linear-gradient(90deg,var(--a),var(--b))}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+  .cell{border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:28px 26px;
+    background:rgba(18,23,34,.8);animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
+  .cell:nth-child(2){animation-delay:.1s}
+  .cell:nth-child(3){animation-delay:.2s}
+  .cell:nth-child(4){animation-delay:.3s}
+  @keyframes rise{from{opacity:0;transform:translateY(20px)}}
+  .num{font-size:52px;font-weight:700;letter-spacing:-1px;
+    background:linear-gradient(100deg,var(--a),var(--b));-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .num small{font-size:22px;font-weight:500;margin-left:4px}
+  .cap{margin-top:12px;font-size:16px;color:rgba(234,240,248,.62);line-height:1.5}
+  .foot{margin-top:52px;display:flex;align-items:center;gap:16px;
+    font-size:16px;color:rgba(234,240,248,.42)}
+  .foot b{color:rgba(234,240,248,.78);font-weight:500}
+  .dot{width:6px;height:6px;border-radius:50%;background:rgba(234,240,248,.3)}
+</style>
+</head>
+<body>
+  <div class="kicker">measured on this clip</div>
+  <h2>30.9 秒对话 <em>变成两条干净音轨</em></h2>
+  <div class="line"></div>
+  <div class="grid">
+    <div class="cell"><div class="num">17.4<small>dB</small></div>
+      <div class="cap">平均 SI-SDR<br>对比原始分轨</div></div>
+    <div class="cell"><div class="num">99.4<small>%</small></div>
+      <div class="cap">说话人分段准确率<br>逐帧对照</div></div>
+    <div class="cell"><div class="num">5.5<small>s</small></div>
+      <div class="cap">整段处理耗时<br>CPU 单核</div></div>
+    <div class="cell"><div class="num">2<small>条</small></div>
+      <div class="cap">独立 WAV<br>可直接下载</div></div>
+  </div>
+  <div class="foot">
+    <span><b>VAD</b> 语音活动检测</span><span class="dot"></span>
+    <span><b>ECAPA-TDNN</b> 声纹嵌入</span><span class="dot"></span>
+    <span><b>2-means</b> 双人聚类</span><span class="dot"></span>
+    <span><b>掩码重建</b> 分轨输出</span>
+  </div>
+</body>
+</html>
